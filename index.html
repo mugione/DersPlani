@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ders Dağılım Sistemi</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">◈</span> Ders Dağılım Sistemi</div>
+  <nav class="tabs">
+    <button class="tab active" data-view="rooms">Derslikler</button>
+    <button class="tab" data-view="teachers">Öğretmenler</button>
+    <button class="tab" data-view="classes">Sınıflar</button>
+    <button class="tab" data-view="schedule">Program</button>
+    <button class="tab" data-view="settings">Ayarlar</button>
+  </nav>
+  <div class="actions">
+    <button id="btnExport" class="ghost">Dışa Aktar</button>
+    <button id="btnImport" class="ghost">İçe Aktar</button>
+    <input type="file" id="fileImport" accept="application/json" hidden>
+    <button id="btnTheme" class="ghost" title="Tema">◐</button>
+  </div>
+</header>
+
+<main>
+  <!-- DERSLİKLER -->
+  <section class="view" id="view-rooms">
+    <div class="grid2">
+      <div class="card">
+        <h2>Derslik Ekle</h2>
+        <form id="formRoom" class="form">
+          <label>Derslik No / Ad <input name="name" required placeholder="A-101"></label>
+          <label>Kapasite <input name="capacity" type="number" min="1" required value="30"></label>
+          <label>Tür
+            <select name="type">
+              <option value="normal">Normal</option>
+              <option value="lab">Laboratuvar</option>
+              <option value="atolye">Atölye</option>
+              <option value="spor">Spor Salonu</option>
+            </select>
+          </label>
+          <button class="primary" type="submit">Ekle</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Derslikler <span id="roomCount" class="badge">0</span></h2>
+        <div class="tablewrap"><table id="tblRooms"><thead><tr><th>Ad</th><th>Kapasite</th><th>Tür</th><th></th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÖĞRETMENLER -->
+  <section class="view hidden" id="view-teachers">
+    <div class="grid2">
+      <div class="card">
+        <h2>Öğretmen Ekle</h2>
+        <form id="formTeacher" class="form">
+          <label>Ad Soyad <input name="name" required placeholder="Ayşe Yılmaz"></label>
+          <label>Branş <input name="branch" required placeholder="Matematik"></label>
+          <label>Haftalık Maks. Ders Saati <input name="maxHours" type="number" min="1" value="30"></label>
+          <label>Günlük Maks. Ders Saati <input name="maxDaily" type="number" min="1" value="7"></label>
+          <fieldset class="avail">
+            <legend>Müsait Olmadığı Saatler (tıklayarak işaretle)</legend>
+            <div class="availgrid" id="availGrid"></div>
+          </fieldset>
+          <label>Not / Özel Durum <textarea name="note" rows="2" placeholder="Salı günü gelmiyor, raporlu vb."></textarea></label>
+          <button class="primary" type="submit">Ekle</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Öğretmenler <span id="teacherCount" class="badge">0</span></h2>
+        <div id="teacherList" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SINIFLAR -->
+  <section class="view hidden" id="view-classes">
+    <div class="grid2">
+      <div class="card">
+        <h2>Sınıf (Şube) Ekle</h2>
+        <form id="formClass" class="form">
+          <label>Sınıf Adı <input name="name" required placeholder="9-A"></label>
+          <label>Öğrenci Sayısı <input name="students" type="number" min="1" required value="25"></label>
+          <button class="primary" type="submit">Ekle</button>
+        </form>
+        <hr>
+        <h2>Ders Yükü Ekle</h2>
+        <form id="formLesson" class="form">
+          <label>Sınıf <select name="classId" id="lessonClass" required></select></label>
+          <label>Ders Adı <input name="subject" required placeholder="Matematik"></label>
+          <label>Öğretmen <select name="teacherId" id="lessonTeacher" required></select></label>
+          <label>Haftalık Saat <input name="hours" type="number" min="1" max="20" value="4" required></label>
+          <label>Gerekli Derslik Türü
+            <select name="roomType">
+              <option value="any">Farketmez</option>
+              <option value="normal">Normal</option>
+              <option value="lab">Laboratuvar</option>
+              <option value="atolye">Atölye</option>
+              <option value="spor">Spor Salonu</option>
+            </select>
+          </label>
+          <label class="check"><input type="checkbox" name="block" > Mümkünse 2 saat blok yap</label>
+          <button class="primary" type="submit">Ders Ekle</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Sınıflar & Dersler</h2>
+        <div id="classList" class="list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROGRAM -->
+  <section class="view hidden" id="view-schedule">
+    <div class="card">
+      <div class="toolbar">
+        <button id="btnGenerate" class="primary">Programı Oluştur</button>
+        <button id="btnClearSched" class="ghost">Temizle</button>
+        <button id="btnPrint" class="ghost">Yazdır</button>
+        <span class="spacer"></span>
+        <label class="inline">Görünüm
+          <select id="schedMode">
+            <option value="class">Sınıf</option>
+            <option value="teacher">Öğretmen</option>
+            <option value="room">Derslik</option>
+          </select>
+        </label>
+        <label class="inline">Seçim <select id="schedTarget"></select></label>
+      </div>
+      <div id="genReport" class="report hidden"></div>
+      <div id="scheduleOut" class="tablewrap"></div>
+    </div>
+  </section>
+
+  <!-- AYARLAR -->
+  <section class="view hidden" id="view-settings">
+    <div class="card narrow">
+      <h2>Zaman Ayarları</h2>
+      <form id="formSettings" class="form">
+        <label>Günler (virgülle) <input name="days" value="Pazartesi,Salı,Çarşamba,Perşembe,Cuma"></label>
+        <label>Günlük Ders Saati Sayısı <input name="periods" type="number" min="1" max="14" value="8"></label>
+        <button class="primary" type="submit">Kaydet</button>
+      </form>
+      <hr>
+      <h2>Veri</h2>
+      <button id="btnReset" class="danger">Tüm Verileri Sil</button>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
